@@ -92,6 +92,12 @@ pub fn load_project_json(path_str: &str) -> Result<(HashMap<String, AnimationCel
 
     for animation in &mut project.animations {
         animation.duration = animation.get_total_frames();
+        
+        let mut i = 0;
+        for frame in &mut animation.frames {
+            frame.id = i;
+            i += 1;
+        }
     }
 
     Ok((project.animation_cels, project.animations))
