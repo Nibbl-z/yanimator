@@ -52,3 +52,4 @@ jobs:
           name: ${{ matrix.asset_name }}
           path: |
             target/${{ matrix.asset_name }}
+            ${{ env.BINARY_NAME }}-${{ matrix.binstall_suffix }}
