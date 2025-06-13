@@ -18,15 +18,15 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: yanimator-linux-x86_64
+            artifact_name: yanimator
             asset_name: yanimator-linux-x86_64.tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: yanimator-windows-x86_64.exe
+            artifact_name: yanimator.exe
             asset_name: yanimator-windows-x86_64.tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: yanimator-macos-x86_64
+            artifact_name: yanimator
             asset_name: yanimator-macos-x86_64.tar.gz
 
     steps:
@@ -49,6 +49,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
+          name: ${{ matrix.asset_name }}
           path: |
             target/${{ matrix.asset_name }}
