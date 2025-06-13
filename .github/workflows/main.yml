@@ -10,63 +10,7 @@ env:
   BINARY_NAME: yanimator
 
 jobs:
-  check-version:
-    runs-on: ubuntu-latest
-    outputs:
-      should_release: ${{ steps.check_version.outputs.should_release }}
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Get Cargo.toml version
-        id: get_version
-        run: |
-          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml)
-          echo "version=$version" >> $GITHUB_OUTPUT
-
-      - name: Check if release needed
-        id: check_version
-        run: |
-          # Get the latest release tag
-          latest_release=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/latest" | \
-            grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/' || echo "none")
-          
-          # Get current version from previous step
-          current_version="${{ steps.get_version.outputs.version }}"
-          
-          if [ "$latest_release" != "$current_version" ]; then
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_release=false" >> $GITHUB_OUTPUT
-          fi
-
-  build-and-release:
-    needs: [check-version]
-    if: needs.check-version.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ needs.check-version.outputs.version }}
-          release_name: Release v${{ needs.check-version.outputs.version }}
-          draft: false
-          prerelease: false
-          body: |
-            Release v${{ needs.check-version.outputs.version }}
-            
-            Automated release for commit ${{ github.sha }}
-            Created at: ${{ needs.create-tag.outputs.tag_name }}
-            Released by: ${{ github.actor }}
-
   build:
-    needs: [check-version, build-and-release]
     if: needs.check-version.outputs.should_release == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
@@ -110,11 +54,9 @@ jobs:
             cp ${{ matrix.artifact_name }} ../../${{ matrix.asset_name }}
           fi
 
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: |
+          path: |
             target/${{ matrix.asset_name }}
             ${{ env.BINARY_NAME }}-${{ needs.check-version.outputs.version }}-${{ matrix.binstall_suffix }}
-          tag_name: v${{ needs.check-version.outputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
