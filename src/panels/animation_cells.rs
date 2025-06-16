@@ -120,7 +120,7 @@ pub fn ui(ui: &mut Ui, app: &mut Yanimator) {
                     }
 
                     button.context_menu(|ui| {
-                        if ui.add(Button::image_and_text(include_image!("../../assets/edit.png"), "Edit")).clicked() {
+                        if ui.add(Button::image_and_text(include_image!("../../assets/film_edit.png"), "Edit")).clicked() {
                             app.state = AppState::CellEditor;
                             app.editing_cell = String::from(name);
                             ui.close_menu();

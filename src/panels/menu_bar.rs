@@ -252,7 +252,7 @@ pub fn ui(ui: &mut Ui, app: &mut Yanimator) {
             if ui.add(Button::image_and_text(include_image!("../../assets/television.png"), "Load Animations (.c)")).clicked() {
                 load_animations(app);
             }
-
+            
             ui.separator();
 
             if ui.add(Button::image_and_text(include_image!("../../assets/film_save.png"), "Export Animation Cels (.c)")).clicked() {

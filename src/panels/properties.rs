@@ -48,6 +48,8 @@ pub fn ui(ui: &mut Ui, app: &mut Yanimator) {
         None => return,
     };
     
+    let oam_len = cell.oams.len();
+    
     let oam = match cell.oams.get_mut(app.editing_oam) {
         Some(oam) => oam,
         None => return,
@@ -118,6 +120,10 @@ pub fn ui(ui: &mut Ui, app: &mut Yanimator) {
                     ui.selectable_value(&mut oam.flip, OAMFlip::Vertical, "Vertical");
                     ui.selectable_value(&mut oam.flip, OAMFlip::Both, "Both");
                 });
+            ui.end_row();
+            
+            ui.label("Z-Index");
+            ui.add(egui::DragValue::new(&mut oam.zindex).speed(0.2).range(0..=oam_len));
             ui.end_row();
         });
 

@@ -135,8 +135,11 @@ pub fn export_animation_cels(path: &str, animation_cells: &HashMap<String, Anima
         export.push_str(&format!("    /* Len */ {},\n", cell.oams.len()));
 
         let mut i = 0;
-
-        for oam in &cell.oams {
+        
+        let mut sorted_oams = cell.oams.clone();
+        sorted_oams.sort_by(|a, b| a.zindex.cmp(&b.zindex));
+        
+        for oam in sorted_oams {
             export.push_str(&format!("    /* {:0fill$} */ ", i, fill = 3));
             let shape: u16 = match oam.shape {
                 OAMShape::Square => 0x0000,

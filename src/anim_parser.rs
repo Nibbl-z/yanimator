@@ -34,8 +34,12 @@ pub struct OAM {
     pub palette: usize,
     pub tile: usize,
     #[serde(skip)]
-    pub selected: bool
+    pub selected: bool,
+    #[serde(default = "usize::default")]
+    pub zindex: usize
 }
+
+const SPRITE_SIZE: f32 = 20.0;
 
 impl OAM {
     pub fn new(bytes: &[u8]) -> OAM {
@@ -92,7 +96,8 @@ impl OAM {
             y: y as i8,
             palette,
             tile,
-            selected: false
+            selected: false,
+            zindex: 0
         }
     }
 
@@ -125,7 +130,7 @@ impl OAM {
         let palette = bytes[5] as usize;
         let tile = (((bytes[6] as usize) << 8) | (bytes[7] as usize)) as usize;
 
-        OAM {shape, size, flip, x, y, palette, tile, selected: false}
+        OAM {shape, size, flip, x, y, palette, tile, selected: false, zindex: 0}
     }
     
     pub fn get_width_and_height(&self) -> (usize, usize) {
@@ -155,8 +160,6 @@ impl OAM {
         let mut sprite_indexes: Vec<Vec<usize>> = Vec::new();
         
         let (width, height) = self.get_width_and_height();
-        
-        
         
         let mut y_range: Vec<usize> = (0..height).collect();
         let mut x_range: Vec<usize> = (0..width).collect();
@@ -204,7 +207,7 @@ impl OAM {
     pub fn draw(&self, textures: &Vec<Vec<TextureHandle>>, ui: &mut Ui, selection_indicator_enabled: bool) {
         let oam_sprites = self.get_sprite_indexes();
             
-        let sprite_size = 20.0;
+        
         let (width, height) = self.get_width_and_height();
 
         for y in 0..height {
@@ -219,9 +222,9 @@ impl OAM {
                 
                 let rect = egui::Rect::from_min_size(
                     pos2(
-                        (x as f32) * sprite_size + (self.x as f32) * sprite_size / 8.0, 
-                        (y as f32) * sprite_size + (self.y as f32) * sprite_size / 8.0),
-                    vec2(sprite_size, sprite_size)
+                        (x as f32) * SPRITE_SIZE + (self.x as f32) * SPRITE_SIZE / 8.0, 
+                        (y as f32) * SPRITE_SIZE + (self.y as f32) * SPRITE_SIZE / 8.0),
+                    vec2(SPRITE_SIZE, SPRITE_SIZE)
                 );
                 
                 let source = match texture_sheet.get(oam_sprites[y][x]) {
@@ -252,22 +255,15 @@ impl OAM {
                     }
                     
                     ui.add(
-                        texture.fit_to_exact_size(vec2(sprite_size, sprite_size))
+                        texture.fit_to_exact_size(vec2(SPRITE_SIZE, SPRITE_SIZE))
                     )
                 });
                 
-                //ui.allocate_space(vec2(sprite_size, sprite_size));
+                //ui.allocate_space(vec2(SPRITE_SIZE, SPRITE_SIZE));
             }
         }
-
-        if self.selected && selection_indicator_enabled {
-            ui.painter().rect_stroke(
-                Rect::from_min_size(pos2((self.x as f32) * sprite_size / 8.0, (self.y as f32) * sprite_size / 8.0), vec2(sprite_size * width as f32, sprite_size * height as f32)), 
-                0, 
-                Stroke::new(2.0, Color32::RED), 
-                egui::StrokeKind::Outside
-            );
-        }
+        
+        
         
     }
 }
@@ -293,6 +289,7 @@ impl AnimationCel {
         let mut i = 0;
 
         let mut oams: Vec<OAM> = Vec::new();
+        let mut zindex = 0;
 
         while i < words.len() {
             let mut bytes: Vec<u8> = Vec::new();
@@ -314,11 +311,15 @@ impl AnimationCel {
             bytes.push(byte4);
             bytes.push(byte5);
             bytes.push(byte6);
-
+            
             i += 3;
 
-            let oam = OAM::new(&bytes);
+            let mut oam = OAM::new(&bytes);
+            oam.zindex = zindex;
+
             oams.push(oam);
+            
+            zindex += 1;
         }
 
         Some(AnimationCel { oams, name: name.to_string() })
@@ -341,15 +342,37 @@ impl AnimationCel {
         for x in 0..length {
             oams.push(OAM::from_bin(&bin[i + (x * 8)..i + (x * 8) + 8]))
         }
-
+        
 
         Some(AnimationCel { name, oams })
     }
 
     pub fn draw(&self, textures: &Vec<Vec<TextureHandle>>, ui: &mut Ui, selection_indicator_enabled: bool) {
-        for oam in self.oams.iter().rev() {
+        let mut sorted_oams = self.oams.clone();
+        sorted_oams.sort_by(|a, b| a.zindex.cmp(&b.zindex));
+        
+        let mut selected_oam = None;
+
+        for oam in sorted_oams.iter().rev() {
             oam.draw(textures, ui, selection_indicator_enabled);
+            if oam.selected {
+                selected_oam = Some(oam);
+            }
         }
+        
+        if let Some(selected_oam) = selected_oam {
+            if selection_indicator_enabled {
+                let (width, height) = selected_oam.get_width_and_height();
+                ui.painter().rect_stroke(
+                    Rect::from_min_size(pos2((selected_oam.x as f32) * SPRITE_SIZE / 8.0, (selected_oam.y as f32) * SPRITE_SIZE / 8.0), vec2(SPRITE_SIZE * width as f32, SPRITE_SIZE * height as f32)), 
+                    0, 
+                    Stroke::new(2.0, Color32::RED), 
+                    egui::StrokeKind::Outside
+                );
+            }
+        }
+
+        
     }
 }
 

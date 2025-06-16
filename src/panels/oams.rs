@@ -22,6 +22,7 @@ pub fn ui(ui: &mut Ui, app: &mut Yanimator) {
                     palette: 0,
                     tile: 0,
                     selected: false,
+                    zindex: cell.oams.len()
                 });
             }
         });
